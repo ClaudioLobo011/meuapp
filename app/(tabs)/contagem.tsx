@@ -84,6 +84,7 @@ export default function Contagem() {
   const [readerBuffer, setReaderBuffer] = useState("");
   const lastScanRef = useRef<{ code: string; t: number }>({ code: "", t: 0 });
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextSubmit = useRef(false);
 
   const focusReader = () => {
     if (externalReader) setTimeout(() => readerRef.current?.focus(), 30);
@@ -174,6 +175,7 @@ export default function Contagem() {
 
     // ENTER/CR/LF/TAB => commit imediato
     if (/[\r\n\t]/.test(text)) {
+      skipNextSubmit.current = true;
       commitScan(text);
       setReaderBuffer("");
       focusReader();
@@ -189,6 +191,10 @@ export default function Contagem() {
   };
 
   const onReaderSubmit = (e: any) => {
+    if (skipNextSubmit.current) {
+      skipNextSubmit.current = false;
+      return;
+    }
     commitScan(String(e?.nativeEvent?.text ?? readerBuffer));
     setReaderBuffer("");
     focusReader();
