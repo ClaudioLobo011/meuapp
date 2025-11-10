@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
     KeyboardAvoidingView,
@@ -15,13 +15,15 @@ import {
 } from "react-native";
 import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 
+import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
+
 /** Tipos */
 type Item = { codigo: string; cod?: string; nome: string; qtd: number; hora: string };
-type CatalogoItem = { cod?: string; codbarras: string; nome: string };
+type CatalogoItem = ProdutoCatalogo;
 
 /** Chaves de storage */
 const K_READER = "cfg/externalReader";
-const K_CATALOGO = "catalogo/produtos";
+const K_CATALOGO = STORAGE_CATALOGO;
 
 /** Timings para leitura rápida */
 const DEDUPE_MS = 500;  // tolera ENTER atrasado do leitor (commit duplo CR/LF vs. silêncio)
@@ -86,13 +88,13 @@ export default function Contagem() {
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSubmit = useRef(false);
 
-  const focusReader = () => {
+  const focusReader = useCallback(() => {
     if (externalReader) setTimeout(() => readerRef.current?.focus(), 30);
-  };
+  }, [externalReader]);
 
   useEffect(() => {
     if (isFocused) focusReader();
-  }, [isFocused, externalReader]);
+  }, [isFocused, focusReader]);
 
   /** Modal adicionar manual */
   const [modalVisivel, setModalVisivel] = useState(false);

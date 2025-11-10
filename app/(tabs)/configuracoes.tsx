@@ -4,15 +4,14 @@ import * as FileSystem from "expo-file-system";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 
+import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
+
 type ImportLayout = "COD_CODBARRAS_NOME" | "CODBARRAS_NOME" | "COD_NOME";
 type ExportLayout = "COD_CODBARRAS_NOME_QTD" | "CODBARRAS_NOME_QTD" | "COD_NOME_QTD";
-
-type ProdutoCatalogo = { cod?: string; codbarras: string; nome: string };
 
 const K_IMPORT = "cfg/importLayout";
 const K_EXPORT = "cfg/exportLayout";
 const K_READER = "cfg/externalReader";
-const K_CATALOGO = "catalogo/produtos"; // para usarmos depois na Contagem
 
 export default function Configuracoes() {
   const [importLayout, setImportLayout] = useState<ImportLayout>("COD_CODBARRAS_NOME");
@@ -68,6 +67,12 @@ export default function Configuracoes() {
 
       const parsed: ProdutoCatalogo[] = [];
 
+      const extensaoValida = file.name?.toLowerCase().endsWith(".txt") ?? true;
+      if (!extensaoValida && file.mimeType !== "text/plain") {
+        Alert.alert("Arquivo inválido", "Selecione um arquivo .txt conforme o layout escolhido.");
+        return;
+      }
+
       for (const raw of linhas) {
         const cols = raw.split(/[;,|\t]/).map((c) => c.trim());
         // pula cabeçalho se detectar "NOME" etc.
@@ -96,7 +101,15 @@ export default function Configuracoes() {
       }
 
       // salva catálogo para uso futuro (ex.: sugestão/autocomplete na Contagem)
-      await AsyncStorage.setItem(K_CATALOGO, JSON.stringify(parsed));
+      if (parsed.length === 0) {
+        Alert.alert(
+          "Nenhum produto lido",
+          "Verifique o layout selecionado e o conteúdo do arquivo informado."
+        );
+        return;
+      }
+
+      await AsyncStorage.setItem(STORAGE_CATALOGO, JSON.stringify(parsed));
 
       setUltimoImport({ nome: file.name, qtd: parsed.length });
 
