@@ -1,0 +1,26 @@
+{
+    "sourceFile": "app/(tabs)/_layout.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1762788533939,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1762789164275,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,34 +3,13 @@\n \n export default function TabsLayout() {\n   return (\n     <Tabs screenOptions={{ headerShown: false }}>\n-      <Tabs.Screen\n-        name=\"index\"\n-        options={{\n-          title: \"Início\",\n-          tabBarIcon: ({ color, size }) => (\n-            <MaterialIcons name=\"home\" size={size} color={color} />\n-          ),\n-        }}\n-      />\n-      <Tabs.Screen\n-        name=\"contagem\"\n-        options={{\n-          title: \"Contagem\",\n-          tabBarIcon: ({ color, size }) => (\n-            <MaterialIcons name=\"qr-code-scanner\" size={size} color={color} />\n-          ),\n-        }}\n-      />\n-      <Tabs.Screen\n-        name=\"explore\"\n-        options={{\n-          title: \"Explorar\",\n-          tabBarIcon: ({ color, size }) => (\n-            <MaterialIcons name=\"explore\" size={size} color={color} />\n-          ),\n-        }}\n-      />\n+      <Tabs.Screen name=\"index\" options={{ title: \"Início\",\n+        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"home\" size={size} color={color} /> }} />\n+      <Tabs.Screen name=\"contagem\" options={{ title: \"Contagem\",\n+        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"qr-code-scanner\" size={size} color={color} /> }} />\n+      <Tabs.Screen name=\"explore\" options={{ title: \"Explorar\",\n+        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"explore\" size={size} color={color} /> }} />\n     </Tabs>\n   );\n }\n"
+                },
+                {
+                    "date": 1762790113894,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -3,13 +3,36 @@\n \n export default function TabsLayout() {\n   return (\n     <Tabs screenOptions={{ headerShown: false }}>\n-      <Tabs.Screen name=\"index\" options={{ title: \"Início\",\n-        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"home\" size={size} color={color} /> }} />\n-      <Tabs.Screen name=\"contagem\" options={{ title: \"Contagem\",\n-        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"qr-code-scanner\" size={size} color={color} /> }} />\n-      <Tabs.Screen name=\"explore\" options={{ title: \"Explorar\",\n-        tabBarIcon: ({ color, size }) => <MaterialIcons name=\"explore\" size={size} color={color} /> }} />\n+      <Tabs.Screen\n+        name=\"index\"\n+        options={{\n+          title: \"Início\",\n+          tabBarIcon: ({ color, size }) => (\n+            <MaterialIcons name=\"home\" size={size} color={color} />\n+          ),\n+        }}\n+      />\n+\n+      <Tabs.Screen\n+        name=\"contagem\"\n+        options={{\n+          title: \"Contagem\",\n+          tabBarIcon: ({ color, size }) => (\n+            <MaterialIcons name=\"qr-code-scanner\" size={size} color={color} />\n+          ),\n+        }}\n+      />\n+\n+      <Tabs.Screen\n+        name=\"configuracoes\"\n+        options={{\n+          title: \"Configurações\",\n+          tabBarIcon: ({ color, size }) => (\n+            <MaterialIcons name=\"settings\" size={size} color={color} />\n+          ),\n+        }}\n+      />\n     </Tabs>\n   );\n }\n"
+                }
+            ],
+            "date": 1762788533939,
+            "name": "Commit-0",
+            "content": "import { MaterialIcons } from \"@expo/vector-icons\";\nimport { Tabs } from \"expo-router\";\n\nexport default function TabsLayout() {\n  return (\n    <Tabs screenOptions={{ headerShown: false }}>\n      <Tabs.Screen\n        name=\"index\"\n        options={{\n          title: \"Início\",\n          tabBarIcon: ({ color, size }) => (\n            <MaterialIcons name=\"home\" size={size} color={color} />\n          ),\n        }}\n      />\n      <Tabs.Screen\n        name=\"contagem\"\n        options={{\n          title: \"Contagem\",\n          tabBarIcon: ({ color, size }) => (\n            <MaterialIcons name=\"qr-code-scanner\" size={size} color={color} />\n          ),\n        }}\n      />\n      <Tabs.Screen\n        name=\"explore\"\n        options={{\n          title: \"Explorar\",\n          tabBarIcon: ({ color, size }) => (\n            <MaterialIcons name=\"explore\" size={size} color={color} />\n          ),\n        }}\n      />\n    </Tabs>\n  );\n}\n"
+        }
+    ]
+}

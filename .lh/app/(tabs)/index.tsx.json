@@ -1,0 +1,26 @@
+{
+    "sourceFile": "app/(tabs)/index.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1762788737444,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1762790141021,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,13 +1,9 @@\n-import { Link } from \"expo-router\";\n-import { Button, Text, View } from \"react-native\";\n+import { Text, View } from \"react-native\";\n \n-export default function Home() {\n+export default function Inicio() {\n   return (\n-    <View style={{ flex: 1, gap: 16, justifyContent: \"center\", alignItems: \"center\" }}>\n-      <Text style={{ fontSize: 22, fontWeight: \"700\" }}>É o Bicho — Início</Text>\n-      <Link href=\"/contagem\" asChild>\n-        <Button title=\"Abrir Contagem de Estoque\" />\n-      </Link>\n+    <View style={{ flex: 1, alignItems: \"center\", justifyContent: \"center\" }}>\n\\ No newline at end of file\n+      <Text style={{ fontSize: 20, fontWeight: \"600\" }}>Início</Text>\n     </View>\n   );\n-}\n+}\n"
+                },
+                {
+                    "date": 1762790428761,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,9 +1,87 @@\n-import { Text, View } from \"react-native\";\n+import { useState } from \"react\";\n+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from \"react-native\";\n \n+type TabKey = \"historico\" | \"produtos\";\n+\n export default function Inicio() {\n+  const [tab, setTab] = useState<TabKey>(\"historico\");\n+\n\\ No newline at end of file\n   return (\n-    <View style={{ flex: 1, alignItems: \"center\", justifyContent: \"center\" }}>\n-      <Text style={{ fontSize: 20, fontWeight: \"600\" }}>Início</Text>\n-    </View>\n+    <SafeAreaView style={s.container}>\n+      {/* Cabeçalho */}\n+      <View style={s.header}>\n+        <Text style={s.headerTitle}>LobosTi Contagem</Text>\n+      </View>\n+\n+      {/* Abas internas */}\n+      <View style={s.tabsRow}>\n+        <TabButton label=\"Historico\" active={tab === \"historico\"} onPress={() => setTab(\"historico\")} />\n+        <TabButton label=\"Produtos\" active={tab === \"produtos\"} onPress={() => setTab(\"produtos\")} />\n+      </View>\n+\n+      {/* Conteúdo da aba selecionada */}\n+      <View style={s.content}>\n+        {tab === \"historico\" ? (\n+          <View style={s.center}>\n+            <Text style={s.placeholder}>Sem histórico ainda.</Text>\n+            <Text style={s.hint}>As contagens aparecerão aqui quando forem salvas.</Text>\n+          </View>\n+        ) : (\n+          <View style={s.center}>\n+            <Text style={s.placeholder}>Nenhum produto carregado.</Text>\n+            <Text style={s.hint}>Em breve listaremos os produtos para contagem.</Text>\n+          </View>\n+        )}\n+      </View>\n+    </SafeAreaView>\n   );\n-}\n+}\n+\n+function TabButton({\n+  label,\n+  active,\n+  onPress,\n+}: {\n+  label: string;\n+  active: boolean;\n+  onPress: () => void;\n+}) {\n+  return (\n+    <TouchableOpacity style={[s.tabBtn, active && s.tabBtnActive]} onPress={onPress}>\n+      <Text style={[s.tabText, active && s.tabTextActive]}>{label}</Text>\n+    </TouchableOpacity>\n+  );\n+}\n+\n+const s = StyleSheet.create({\n+  container: { flex: 1, backgroundColor: \"#fff\" },\n+  header: {\n+    paddingHorizontal: 16,\n+    paddingVertical: 14,\n+    borderBottomWidth: StyleSheet.hairlineWidth,\n+    borderColor: \"#ddd\",\n+  },\n+  headerTitle: { fontSize: 18, fontWeight: \"700\" },\n+  tabsRow: {\n+    flexDirection: \"row\",\n+    gap: 8,\n+    paddingHorizontal: 12,\n+    paddingVertical: 10,\n+    borderBottomWidth: StyleSheet.hairlineWidth,\n+    borderColor: \"#eee\",\n+  },\n+  tabBtn: {\n+    flex: 1,\n+    alignItems: \"center\",\n+    paddingVertical: 10,\n+    borderRadius: 10,\n+    backgroundColor: \"#f2f2f2\",\n+  },\n+  tabBtnActive: { backgroundColor: \"#111\" },\n+  tabText: { fontSize: 14, fontWeight: \"600\", color: \"#333\" },\n+  tabTextActive: { color: \"#fff\" },\n+  content: { flex: 1, padding: 16 },\n+  center: { flex: 1, justifyContent: \"center\", alignItems: \"center\", gap: 6 },\n+  placeholder: { fontSize: 16, fontWeight: \"600\" },\n+  hint: { fontSize: 12, color: \"#666\" },\n+});\n"
+                }
+            ],
+            "date": 1762788737444,
+            "name": "Commit-0",
+            "content": "import { Link } from \"expo-router\";\nimport { Button, Text, View } from \"react-native\";\n\nexport default function Home() {\n  return (\n    <View style={{ flex: 1, gap: 16, justifyContent: \"center\", alignItems: \"center\" }}>\n      <Text style={{ fontSize: 22, fontWeight: \"700\" }}>É o Bicho — Início</Text>\n      <Link href=\"/contagem\" asChild>\n        <Button title=\"Abrir Contagem de Estoque\" />\n      </Link>\n    </View>\n  );\n}"
+        }
+    ]
+}
