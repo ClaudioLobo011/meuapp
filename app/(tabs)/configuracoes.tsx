@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { readAsStringAsync } from "expo-file-system/legacy";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 
@@ -57,7 +57,7 @@ export default function Configuracoes() {
       const file = pick.assets[0];
       const uri = file.uri;
 
-      const txt = await FileSystem.readAsStringAsync(uri, { encoding: "utf8" });
+      const txt = await readAsStringAsync(uri, { encoding: "utf8" });
 
       // quebra linhas e detecta separador ; , ou \t
       const linhas = txt
