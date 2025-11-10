@@ -24,7 +24,7 @@ const K_READER = "cfg/externalReader";
 const K_CATALOGO = "catalogo/produtos";
 
 /** Timings para leitura rápida */
-const DEDUPE_MS = 60;   // evita contar duas vezes no mesmo disparo (CR+LF/submit duplo)
+const DEDUPE_MS = 500;  // tolera ENTER atrasado do leitor (commit duplo CR/LF vs. silêncio)
 const SILENCE_MS = 140; // confirma leitura quando não vem ENTER/TAB
 
 /** Normaliza a leitura:
