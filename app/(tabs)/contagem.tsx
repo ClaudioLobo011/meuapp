@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
     KeyboardAvoidingView,
@@ -25,21 +25,26 @@ type CatalogoItem = ProdutoCatalogo;
 const K_READER = "cfg/externalReader";
 const K_CATALOGO = STORAGE_CATALOGO;
 
-/** Timings para leitura rápida */
-const DEDUPE_MS = 500;  // tolera ENTER atrasado do leitor (commit duplo CR/LF vs. silêncio)
-const SILENCE_MS = 140; // confirma leitura quando não vem ENTER/TAB
+/** Timings pensados para leitura MUITO rápida
+ * - DEDUPE_ENTER_MS: bloqueia o "eco" do mesmo disparo (CR -> submit, CR+LF, etc)
+ * - SILENCE_MS: confirma leitura quando o leitor não envia Enter/Tab
+ */
+const DEDUPE_ENTER_MS = 120;
+const SILENCE_MS = 70;
 
-/** Normaliza a leitura:
- * - remove CR/LF/TAB
- * - se houver dígitos, mantém só os dígitos (EAN/UPC)
- * - colapsa repetições: "ABCABC" -> "ABC", "123123123" -> "123"
+/** Normaliza a leitura: remove CR/LF/TAB + caracteres de controle 0-31/DEL.
+ *  Se houver >=8 dígitos, assume só dígitos (EAN/UPC). Colapsa repetições.
  */
 function normalizeScan(raw: string) {
-  let s = raw.replace(/[\r\n\t]+/g, "").trim();
+  // remove caracteres de controle (inclui \r, \n, \t)
+  const CTRL = /[\x00-\x1F\x7F]+/g;
+  let s = String(raw).replace(CTRL, "").trim();
 
+  // só dígitos (muitos coletores mandam lixo visual junto)
   const onlyDigits = s.replace(/\D+/g, "");
   if (onlyDigits.length >= 8) s = onlyDigits;
 
+  // colapsa repetições exatas (ex.: "123123" -> "123")
   const n = s.length;
   if (n > 0) {
     const ss = (s + s).slice(1, -1);
@@ -55,11 +60,11 @@ function normalizeScan(raw: string) {
 export default function Contagem() {
   const isFocused = useIsFocused();
 
-  /** Estado principal */
+  // ===== Estado principal ======================================================
   const [itens, setItens] = useState<Item[]>([]);
   const [busca, setBusca] = useState("");
 
-  /** Config / Catálogo */
+  // ===== Config / Catálogo =====================================================
   const [externalReader, setExternalReader] = useState(false);
   const catalogoRef = useRef<Map<string, CatalogoItem>>(new Map());
 
@@ -81,35 +86,23 @@ export default function Contagem() {
     })();
   }, []);
 
-  /** Leitor externo: input oculto + foco forçado */
+  // ===== Leitor externo: input oculto + foco forçado ===========================
   const readerRef = useRef<TextInput>(null);
-  const [readerBuffer, setReaderBuffer] = useState("");
+  const [readerBuffer, setReaderBuffer] = useState(""); // visibilidade do valor no RN
+  const bufRef = useRef(""); // buffer "real" (evita custo de re-render a cada char)
   const lastScanRef = useRef<{ code: string; t: number }>({ code: "", t: 0 });
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextSubmit = useRef(false);
+  const skipNextSubmit = useRef(false); // ignora onSubmit imediatamente após Enter já processado
 
   const focusReader = useCallback(() => {
-    if (externalReader) setTimeout(() => readerRef.current?.focus(), 30);
+    if (externalReader) setTimeout(() => readerRef.current?.focus(), 20);
   }, [externalReader]);
 
   useEffect(() => {
     if (isFocused) focusReader();
   }, [isFocused, focusReader]);
 
-  /** Modal adicionar manual */
-  const [modalVisivel, setModalVisivel] = useState(false);
-  const [cod, setCod] = useState("");
-  const [codbarras, setCodbarras] = useState("");
-  const [nome, setNome] = useState("");
-  const [quantidade, setQuantidade] = useState("");
-  const [erros, setErros] = useState<{ codbarras?: string; nome?: string; quantidade?: string }>({});
-
-  /** Modal confirmar exclusão */
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const [targetCodigo, setTargetCodigo] = useState<string | null>(null);
-  const [targetNome, setTargetNome] = useState<string | null>(null);
-
-  /** KPIs */
+  // ===== KPIs ==================================================================
   const produtosDiferentes = useMemo(
     () => new Set(itens.filter((i) => i.qtd > 0).map((i) => i.codigo)).size,
     [itens]
@@ -120,7 +113,7 @@ export default function Contagem() {
     [itens]
   );
 
-  /** Filtro de busca (cod, codbarras, nome) */
+  // ===== Filtro de busca (cod, codbarras, nome) ================================
   const itensFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     if (!q) return itens;
@@ -132,14 +125,15 @@ export default function Contagem() {
     );
   }, [busca, itens]);
 
-  /** Commit da leitura com normalização e de-dupe */
-  function commitScan(raw: string) {
+  // ===== Commit de leitura rápido + de-dupe fino ===============================
+  const commitScan = useCallback((raw: string) => {
     const code = normalizeScan(raw);
     if (!code) return;
 
     const now = Date.now();
-    if (code === lastScanRef.current.code && now - lastScanRef.current.t < DEDUPE_MS) {
-      return; // mesmo disparo (CR+LF/submit duplo)
+    // bloqueia somente o "eco" do MESMO disparo (CR seguido de submit, CR+LF etc.)
+    if (code === lastScanRef.current.code && now - lastScanRef.current.t < DEDUPE_ENTER_MS) {
+      return;
     }
     lastScanRef.current = { code, t: now };
 
@@ -162,7 +156,7 @@ export default function Contagem() {
       }
       return [{ codigo: code, cod: cat?.cod, nome: cat?.nome ?? "", qtd: 1, hora }, ...prev];
     });
-  }
+  }, []);
 
   const clearSilenceTimer = () => {
     if (silenceTimer.current) {
@@ -172,37 +166,55 @@ export default function Contagem() {
   };
 
   const onReaderChange = (text: string) => {
+    // Atualiza buffers sem perder eventos
     setReaderBuffer(text);
+    bufRef.current = text;
+
     clearSilenceTimer();
 
-    // ENTER/CR/LF/TAB => commit imediato
+    // ENTER/CR/LF/TAB presentes no texto => commit imediato
     if (/[\r\n\t]/.test(text)) {
-      skipNextSubmit.current = true;
+      skipNextSubmit.current = true; // evita eco do onSubmit
       commitScan(text);
       setReaderBuffer("");
+      bufRef.current = "";
       focusReader();
       return;
     }
 
-    // fallback por silêncio (leitores que não enviam ENTER)
+    // fallback por silêncio: alguns leitores não mandam Enter
     silenceTimer.current = setTimeout(() => {
-      commitScan(text);
+      commitScan(bufRef.current);
       setReaderBuffer("");
+      bufRef.current = "";
       focusReader();
     }, SILENCE_MS);
   };
 
+  const onReaderKeyPress = (e: any) => {
+    const k = String(e?.nativeEvent?.key || "");
+    if (k === "Enter" || k === "Tab") {
+      // processa mesmo que o leitor dispare keypress sem alterar o texto
+      skipNextSubmit.current = true;
+      commitScan(bufRef.current || readerBuffer);
+      setReaderBuffer("");
+      bufRef.current = "";
+      focusReader();
+    }
+  };
+
   const onReaderSubmit = (e: any) => {
     if (skipNextSubmit.current) {
-      skipNextSubmit.current = false;
+      skipNextSubmit.current = false; // consumiu o eco
       return;
     }
-    commitScan(String(e?.nativeEvent?.text ?? readerBuffer));
+    commitScan(String(e?.nativeEvent?.text ?? bufRef.current ?? readerBuffer));
     setReaderBuffer("");
+    bufRef.current = "";
     focusReader();
   };
 
-  /** Ações da lista */
+  // ===== Ações da lista ========================================================
   function updateQty(codigo: string, delta: number) {
     setItens((prev) => {
       const idx = prev.findIndex((x) => x.codigo === codigo);
@@ -281,7 +293,14 @@ export default function Contagem() {
     </Swipeable>
   );
 
-  /** Salvar via modal manual */
+  // ===== Modal adicionar manual ===============================================
+  const [modalVisivel, setModalVisivel] = useState(false);
+  const [cod, setCod] = useState("");
+  const [codbarras, setCodbarras] = useState("");
+  const [nome, setNome] = useState("");
+  const [quantidade, setQuantidade] = useState("");
+  const [erros, setErros] = useState<{ codbarras?: string; nome?: string; quantidade?: string }>({});
+
   function salvarDoModal() {
     const e: typeof erros = {};
     if (!codbarras.trim()) e.codbarras = "Obrigatório";
@@ -321,6 +340,20 @@ export default function Contagem() {
     setModalVisivel(false);
   }
 
+  // ===== Confirmar exclusão ====================================================
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [targetCodigo, setTargetCodigo] = useState<string | null>(null);
+  const [targetNome, setTargetNome] = useState<string | null>(null);
+
+  function confirmarExcluir() {
+    if (!targetCodigo) return;
+    setItens((prev) => prev.filter((x) => x.codigo !== targetCodigo));
+    setConfirmVisible(false);
+    setTargetCodigo(null);
+    setTargetNome(null);
+  }
+
+  // ===== Render ================================================================
   return (
     <GestureHandlerRootView
       style={{ flex: 1, backgroundColor: "#fff" }}
@@ -332,6 +365,7 @@ export default function Contagem() {
           ref={readerRef}
           value={readerBuffer}
           onChangeText={onReaderChange}
+          onKeyPress={onReaderKeyPress}
           onSubmitEditing={onReaderSubmit}
           style={s.hiddenInput}
           autoFocus
