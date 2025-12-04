@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import { readAsStringAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
@@ -174,12 +174,14 @@ Produtos lidos: ${parsed.length}`);
         .replace("T", "-")
         .slice(0, 15);
       const filename = `contagem-${ts}.txt`;
-      const uri = `${FileSystem.cacheDirectory}${filename}`;
+      const arquivo = new File(Paths.cache, filename);
 
-      await FileSystem.writeAsStringAsync(uri, conteudo, {
-        // "utf8" string evita falha quando EncodingType não está disponível no runtime
-        encoding: "utf8",
-      });
+      if (!arquivo.parentDirectory.exists) {
+        arquivo.parentDirectory.create({ intermediates: true, idempotent: true });
+      }
+
+      arquivo.write(conteudo, { encoding: "utf8" });
+      const uri = arquivo.uri;
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
