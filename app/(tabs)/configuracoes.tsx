@@ -1,11 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 
 type ImportLayout = "COD_CODBARRAS_NOME" | "CODBARRAS_NOME" | "COD_NOME";
 type ExportLayout = "COD_CODBARRAS_NOME_QTD" | "CODBARRAS_NOME_QTD" | "COD_NOME_QTD";
+
+type ItemContagem = { codigo: string; cod?: string; nome: string; qtd: number };
 
 type ProdutoCatalogo = { cod?: string; codbarras: string; nome: string };
 
@@ -13,12 +16,14 @@ const K_IMPORT = "cfg/importLayout";
 const K_EXPORT = "cfg/exportLayout";
 const K_READER = "cfg/externalReader";
 const K_CATALOGO = "catalogo/produtos"; // para usarmos depois na Contagem
+const K_CONTAGEM = "contagem/itens";
 
 export default function Configuracoes() {
   const [importLayout, setImportLayout] = useState<ImportLayout>("COD_CODBARRAS_NOME");
   const [exportLayout, setExportLayout] = useState<ExportLayout>("COD_CODBARRAS_NOME_QTD");
   const [externalReader, setExternalReader] = useState(false);
   const [ultimoImport, setUltimoImport] = useState<{ nome?: string; qtd: number } | null>(null);
+  const [ultimoExport, setUltimoExport] = useState<{ arquivo: string; linhas: number } | null>(null);
 
   // carregar config salva
   useEffect(() => {
@@ -106,6 +111,58 @@ export default function Configuracoes() {
     }
   }
 
+  async function carregarItensContagem() {
+    const salvo = await AsyncStorage.getItem(K_CONTAGEM);
+    if (!salvo) return [] as ItemContagem[];
+    try {
+      const arr = JSON.parse(salvo);
+      if (Array.isArray(arr)) return arr as ItemContagem[];
+    } catch {}
+    return [] as ItemContagem[];
+  }
+
+  function gerarLinha(item: ItemContagem) {
+    const cod = item.cod?.trim() || item.codigo;
+    const nome = item.nome?.trim() || "(sem nome)";
+    if (exportLayout === "COD_CODBARRAS_NOME_QTD") {
+      return [cod, item.codigo, nome, item.qtd].join(";");
+    }
+    if (exportLayout === "CODBARRAS_NOME_QTD") {
+      return [item.codigo, nome, item.qtd].join(";");
+    }
+    return [cod, nome, item.qtd].join(";");
+  }
+
+  async function exportarContagem() {
+    try {
+      const itens = await carregarItensContagem();
+      if (!itens.length) {
+        Alert.alert("Nada para exportar", "Nenhuma contagem foi registrada até o momento.");
+        return;
+      }
+
+      const linhas = itens.map(gerarLinha);
+      const conteudo = linhas.join("\n");
+      const arquivo = `contagem_${Date.now()}.txt`;
+      const caminho = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ""}${arquivo}`;
+
+      await FileSystem.writeAsStringAsync(caminho, conteudo, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      setUltimoExport({ arquivo, linhas: itens.length });
+
+      const podeCompartilhar = await Sharing.isAvailableAsync();
+      if (podeCompartilhar) {
+        await Sharing.shareAsync(caminho, { mimeType: "text/plain", UTI: "public.plain-text" });
+      } else {
+        Alert.alert("Exportação concluída", `Arquivo salvo em: ${caminho}`);
+      }
+    } catch (e: any) {
+      Alert.alert("Falha na exportação", String(e?.message ?? e));
+    }
+  }
+
   return (
     <View style={s.container}>
       <View style={s.header}>
@@ -173,6 +230,21 @@ export default function Configuracoes() {
           <View style={s.importInfo}>
             <Text style={s.small}>Último arquivo: {ultimoImport.nome}</Text>
             <Text style={s.small}>Produtos lidos: {ultimoImport.qtd}</Text>
+          </View>
+        ) : null}
+      </Section>
+
+      <Section title="Exportar Contagem">
+        <Text style={[s.text, { marginBottom: 8 }]}>Gera um .txt seguindo o layout selecionado acima.</Text>
+
+        <TouchableOpacity onPress={exportarContagem} style={s.primaryBtn} activeOpacity={0.85}>
+          <Text style={s.primaryBtnText}>Exportar contagem</Text>
+        </TouchableOpacity>
+
+        {ultimoExport ? (
+          <View style={s.importInfo}>
+            <Text style={s.small}>Último export: {ultimoExport.arquivo}</Text>
+            <Text style={s.small}>Linhas geradas: {ultimoExport.linhas}</Text>
           </View>
         ) : null}
       </Section>

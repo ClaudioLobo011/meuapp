@@ -22,6 +22,7 @@ type CatalogoItem = { cod?: string; codbarras: string; nome: string };
 /** Chaves de storage */
 const K_READER = "cfg/externalReader";
 const K_CATALOGO = "catalogo/produtos";
+const K_CONTAGEM = "contagem/itens";
 
 /** Timings para leitura rápida */
 const DEDUPE_MS = 60;   // evita contar duas vezes no mesmo disparo (CR+LF/submit duplo)
@@ -63,9 +64,10 @@ export default function Contagem() {
 
   useEffect(() => {
     (async () => {
-      const [rdr, cat] = await Promise.all([
+      const [rdr, cat, savedItens] = await Promise.all([
         AsyncStorage.getItem(K_READER),
         AsyncStorage.getItem(K_CATALOGO),
+        AsyncStorage.getItem(K_CONTAGEM),
       ]);
       setExternalReader(rdr === "1");
       if (cat) {
@@ -76,8 +78,18 @@ export default function Contagem() {
           catalogoRef.current = m;
         } catch {}
       }
+      if (savedItens) {
+        try {
+          const parsed: Item[] = JSON.parse(savedItens);
+          if (Array.isArray(parsed)) setItens(parsed);
+        } catch {}
+      }
     })();
   }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem(K_CONTAGEM, JSON.stringify(itens)).catch(() => {});
+  }, [itens]);
 
   /** Leitor externo: input oculto + foco forçado */
   const readerRef = useRef<TextInput>(null);
