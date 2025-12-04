@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     FlatList,
@@ -20,10 +20,12 @@ import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
 /** Tipos */
 type Item = { codigo: string; cod?: string; nome: string; qtd: number; hora: string };
 type CatalogoItem = ProdutoCatalogo;
+type ContagemPersistida = { codigo: string; cod?: string; nome: string; qtd: number; hora?: string };
 
 /** Chaves de storage */
 const K_READER = "cfg/externalReader";
 const K_CATALOGO = STORAGE_CATALOGO;
+const K_CONTAGEM = "contagem/itens";
 
 /** Timings pensados para leitura MUITO rápida
  * - DEDUPE_ENTER_MS: bloqueia o "eco" do mesmo disparo (CR -> submit, CR+LF, etc)
@@ -66,25 +68,61 @@ export default function Contagem() {
 
   // ===== Config / Catálogo =====================================================
   const [externalReader, setExternalReader] = useState(false);
+  const importLayoutRef = useRef<string | null>(null);
+  const exportLayoutRef = useRef<string | null>(null);
   const catalogoRef = useRef<Map<string, CatalogoItem>>(new Map());
 
-  useEffect(() => {
-    (async () => {
-      const [rdr, cat] = await Promise.all([
-        AsyncStorage.getItem(K_READER),
-        AsyncStorage.getItem(K_CATALOGO),
-      ]);
-      setExternalReader(rdr === "1");
-      if (cat) {
-        try {
-          const arr: CatalogoItem[] = JSON.parse(cat);
-          const m = new Map<string, CatalogoItem>();
-          for (const c of arr) m.set(String(c.codbarras).trim(), c);
-          catalogoRef.current = m;
-        } catch {}
-      }
-    })();
+  const carregarPersistidos = useCallback(async () => {
+    const [rdr, imp, exp, cat, salvos] = await Promise.all([
+      AsyncStorage.getItem(K_READER),
+      AsyncStorage.getItem("cfg/importLayout"),
+      AsyncStorage.getItem("cfg/exportLayout"),
+      AsyncStorage.getItem(K_CATALOGO),
+      AsyncStorage.getItem(K_CONTAGEM),
+    ]);
+
+    setExternalReader(rdr === "1");
+    importLayoutRef.current = imp;
+    exportLayoutRef.current = exp;
+
+    const novoCatalogo = new Map<string, CatalogoItem>();
+    if (cat) {
+      try {
+        const arr: CatalogoItem[] = JSON.parse(cat);
+        for (const c of arr) novoCatalogo.set(String(c.codbarras).trim(), c);
+      } catch {}
+    }
+    catalogoRef.current = novoCatalogo;
+
+    if (salvos) {
+      try {
+        const arr: ContagemPersistida[] = JSON.parse(salvos);
+        if (Array.isArray(arr)) {
+          setItens(
+            arr
+              .filter((x) => x && x.codigo)
+              .map((x) => ({
+                codigo: String(x.codigo),
+                cod: x.cod,
+                nome: x.nome ?? "",
+                qtd: Number(x.qtd) || 0,
+                hora: x.hora || new Date().toLocaleTimeString(),
+              }))
+          );
+        }
+      } catch {}
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarPersistidos();
+    }, [carregarPersistidos])
+  );
+
+  useEffect(() => {
+    AsyncStorage.setItem(K_CONTAGEM, JSON.stringify(itens)).catch(() => {});
+  }, [itens]);
 
   // ===== Leitor externo: input oculto + foco forçado ===========================
   const readerRef = useRef<TextInput>(null);

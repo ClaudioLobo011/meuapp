@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
+import { File, Paths } from "expo-file-system";
 import { readAsStringAsync } from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
@@ -17,12 +19,17 @@ import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
 
 // ---- Tipos de layout ---------------------------------------------------------
 export type ImportLayout = "COD_CODBARRAS_NOME" | "CODBARRAS_NOME" | "COD_NOME";
-export type ExportLayout = "COD_CODBARRAS_NOME_QTD" | "CODBARRAS_NOME_QTD" | "COD_NOME_QTD";
+export type ExportLayout =
+  | "COD_CODBARRAS_NOME_QTD"
+  | "CODBARRAS_NOME_QTD"
+  | "COD_NOME_QTD"
+  | "CODBARRAS_QTD";
 
 // ---- Chaves de storage -------------------------------------------------------
 const K_IMPORT = "cfg/importLayout";
 const K_EXPORT = "cfg/exportLayout";
 const K_READER = "cfg/externalReader";
+const K_CONTAGEM = "contagem/itens";
 
 export default function Configuracoes() {
   const [importLayout, setImportLayout] = useState<ImportLayout>("COD_CODBARRAS_NOME");
@@ -124,6 +131,81 @@ Produtos lidos: ${parsed.length}`);
     }
   }
 
+  async function exportarContagem() {
+    try {
+      const salvos = await AsyncStorage.getItem(K_CONTAGEM);
+      if (!salvos) {
+        Alert.alert("Nada para exportar", "Nenhuma contagem foi registrada até o momento.");
+        return;
+      }
+
+      const arr: { codigo: string; cod?: string; nome?: string; qtd?: number }[] = JSON.parse(salvos);
+      const itensValidos = Array.isArray(arr)
+        ? arr.filter((x) => x && x.codigo && Number(x.qtd) > 0)
+        : [];
+
+      if (!itensValidos.length) {
+        Alert.alert("Nada para exportar", "Nenhuma contagem foi registrada até o momento.");
+        return;
+      }
+
+      const header =
+        exportLayout === "COD_CODBARRAS_NOME_QTD"
+          ? "COD;CODBARRAS;NOME;QTD"
+          : exportLayout === "CODBARRAS_NOME_QTD"
+            ? "CODBARRAS;NOME;QTD"
+            : exportLayout === "COD_NOME_QTD"
+              ? "COD;NOME;QTD"
+              : "CODBARRAS;QTD";
+
+      const linhas = itensValidos.map((item) => {
+        const cod = String(item.cod ?? "").trim();
+        const codigo = String(item.codigo ?? "").trim();
+        const nome = String(item.nome ?? "").replace(/[\r\n]+/g, " ").trim();
+        const qtd = Number(item.qtd ?? 0);
+
+        if (exportLayout === "COD_CODBARRAS_NOME_QTD") {
+          return [cod, codigo, nome, qtd].join(";");
+        }
+        if (exportLayout === "CODBARRAS_NOME_QTD") {
+          return [codigo, nome, qtd].join(";");
+        }
+        if (exportLayout === "COD_NOME_QTD") {
+          return [cod || codigo, nome, qtd].join(";");
+        }
+        return [codigo, qtd].join(";");
+      });
+
+      const conteudo = [header, ...linhas].join("\n");
+      const ts = new Date()
+        .toISOString()
+        .replace(/[-:]/g, "")
+        .replace("T", "-")
+        .slice(0, 15);
+      const filename = `contagem-${ts}.txt`;
+      const arquivo = new File(Paths.cache, filename);
+
+      if (!arquivo.parentDirectory.exists) {
+        arquivo.parentDirectory.create({ intermediates: true, idempotent: true });
+      }
+
+      arquivo.write(conteudo, { encoding: "utf8" });
+      const uri = arquivo.uri;
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          dialogTitle: "Compartilhar contagem",
+          mimeType: "text/plain",
+          UTI: "public.plain-text",
+        });
+      } else {
+        Alert.alert("Exportação concluída", `Arquivo salvo em: ${uri}`);
+      }
+    } catch (e: any) {
+      Alert.alert("Falha na exportação", String(e?.message ?? e));
+    }
+  }
+
   return (
     <SafeAreaView style={s.container}>
       <View style={s.header}>
@@ -159,6 +241,7 @@ Produtos lidos: ${parsed.length}`);
               { value: "COD_CODBARRAS_NOME_QTD", label: "COD, CODBARRAS, NOME, QTD" },
               { value: "CODBARRAS_NOME_QTD", label: "CODBARRAS, NOME, QTD" },
               { value: "COD_NOME_QTD", label: "COD, NOME, QTD" },
+              { value: "CODBARRAS_QTD", label: "CODBARRAS, QTD" },
             ]}
           />
         </Section>
@@ -199,6 +282,18 @@ Produtos lidos: ${parsed.length}`);
               <Text style={s.small}>Produtos lidos: {ultimoImport.qtd}</Text>
             </View>
           ) : null}
+        </Section>
+
+        {/* Exportar Contagem */}
+        <Section title="Exportar Contagem">
+          <Text style={[s.text, { marginBottom: 8 }]}>
+            Gera um arquivo <Text style={{ fontWeight: "700" }}>.txt</Text> com a contagem atual, usando o
+            layout selecionado acima. O arquivo será salvo e você poderá compartilhar.
+          </Text>
+
+          <TouchableOpacity onPress={exportarContagem} style={s.primaryBtn} activeOpacity={0.85}>
+            <Text style={s.primaryBtnText}>Exportar contagem</Text>
+          </TouchableOpacity>
         </Section>
 
         <View style={{ height: 32 }} />
