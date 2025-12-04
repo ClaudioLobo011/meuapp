@@ -19,7 +19,11 @@ import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
 
 // ---- Tipos de layout ---------------------------------------------------------
 export type ImportLayout = "COD_CODBARRAS_NOME" | "CODBARRAS_NOME" | "COD_NOME";
-export type ExportLayout = "COD_CODBARRAS_NOME_QTD" | "CODBARRAS_NOME_QTD" | "COD_NOME_QTD";
+export type ExportLayout =
+  | "COD_CODBARRAS_NOME_QTD"
+  | "CODBARRAS_NOME_QTD"
+  | "COD_NOME_QTD"
+  | "CODBARRAS_QTD";
 
 // ---- Chaves de storage -------------------------------------------------------
 const K_IMPORT = "cfg/importLayout";
@@ -150,7 +154,9 @@ Produtos lidos: ${parsed.length}`);
           ? "COD;CODBARRAS;NOME;QTD"
           : exportLayout === "CODBARRAS_NOME_QTD"
             ? "CODBARRAS;NOME;QTD"
-            : "COD;NOME;QTD";
+            : exportLayout === "COD_NOME_QTD"
+              ? "COD;NOME;QTD"
+              : "CODBARRAS;QTD";
 
       const linhas = itensValidos.map((item) => {
         const cod = String(item.cod ?? "").trim();
@@ -164,7 +170,10 @@ Produtos lidos: ${parsed.length}`);
         if (exportLayout === "CODBARRAS_NOME_QTD") {
           return [codigo, nome, qtd].join(";");
         }
-        return [cod || codigo, nome, qtd].join(";");
+        if (exportLayout === "COD_NOME_QTD") {
+          return [cod || codigo, nome, qtd].join(";");
+        }
+        return [codigo, qtd].join(";");
       });
 
       const conteudo = [header, ...linhas].join("\n");
@@ -232,6 +241,7 @@ Produtos lidos: ${parsed.length}`);
               { value: "COD_CODBARRAS_NOME_QTD", label: "COD, CODBARRAS, NOME, QTD" },
               { value: "CODBARRAS_NOME_QTD", label: "CODBARRAS, NOME, QTD" },
               { value: "COD_NOME_QTD", label: "COD, NOME, QTD" },
+              { value: "CODBARRAS_QTD", label: "CODBARRAS, QTD" },
             ]}
           />
         </Section>
