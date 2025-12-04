@@ -3,8 +3,8 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,17 +15,22 @@ import { ProdutoCatalogo, STORAGE_CATALOGO } from "@/constants/catalogo";
 
 type TabKey = "historico" | "produtos";
 
+// Quantos itens carregar por vez
+const PAGE_SIZE = 200;
+
 export default function Inicio() {
   const [tab, setTab] = useState<TabKey>("historico");
   const [catalogo, setCatalogo] = useState<ProdutoCatalogo[]>([]);
   const [carregandoCatalogo, setCarregandoCatalogo] = useState(true);
   const [erroCatalogo, setErroCatalogo] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useFocusEffect(
     useCallback(() => {
       let ativo = true;
       setCarregandoCatalogo(true);
       setErroCatalogo(null);
+      setVisibleCount(PAGE_SIZE);
 
       (async () => {
         try {
@@ -39,10 +44,14 @@ export default function Inicio() {
 
           try {
             const parsed = JSON.parse(salvo) as ProdutoCatalogo[];
-            setCatalogo(Array.isArray(parsed) ? parsed : []);
+            const lista = Array.isArray(parsed) ? parsed : [];
+            setCatalogo(lista);
+            setVisibleCount(Math.min(PAGE_SIZE, lista.length));
           } catch {
             setCatalogo([]);
-            setErroCatalogo("Falha ao ler o catálogo salvo. Importe novamente o arquivo.");
+            setErroCatalogo(
+              "Falha ao ler o catálogo salvo. Importe novamente o arquivo."
+            );
           }
         } catch {
           if (!ativo) return;
@@ -61,6 +70,24 @@ export default function Inicio() {
     }, [])
   );
 
+  // Carrega mais itens quando chega perto do final da lista
+  const handleLoadMore = () => {
+    if (visibleCount >= catalogo.length) return;
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, catalogo.length));
+  };
+
+  const renderProduto = ({ item }: { item: ProdutoCatalogo }) => {
+    return (
+      <View style={s.produtoItem}>
+        <Text style={s.produtoNome}>{item.nome}</Text>
+        <Text style={s.produtoCodigo}>
+          Código: {item.cod || "—"}
+        </Text>
+        <Text style={s.produtoCodigo}>Cod. barras: {item.codbarras}</Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={s.container}>
       {/* Cabeçalho */}
@@ -70,8 +97,16 @@ export default function Inicio() {
 
       {/* Abas internas */}
       <View style={s.tabsRow}>
-        <TabButton label="Historico" active={tab === "historico"} onPress={() => setTab("historico")} />
-        <TabButton label="Produtos" active={tab === "produtos"} onPress={() => setTab("produtos")} />
+        <TabButton
+          label="Historico"
+          active={tab === "historico"}
+          onPress={() => setTab("historico")}
+        />
+        <TabButton
+          label="Produtos"
+          active={tab === "produtos"}
+          onPress={() => setTab("produtos")}
+        />
       </View>
 
       {/* Conteúdo da aba selecionada */}
@@ -79,7 +114,9 @@ export default function Inicio() {
         {tab === "historico" ? (
           <View style={s.center}>
             <Text style={s.placeholder}>Sem histórico ainda.</Text>
-            <Text style={s.hint}>As contagens aparecerão aqui quando forem salvas.</Text>
+            <Text style={s.hint}>
+              As contagens aparecerão aqui quando forem salvas.
+            </Text>
           </View>
         ) : (
           <View style={s.flex}>
@@ -91,30 +128,58 @@ export default function Inicio() {
             ) : erroCatalogo ? (
               <View style={s.center}>
                 <Text style={s.placeholder}>{erroCatalogo}</Text>
-                <Text style={s.hint}>Volte em Configurações e importe novamente o arquivo.</Text>
+                <Text style={s.hint}>
+                  Volte em Configurações e importe novamente o arquivo.
+                </Text>
               </View>
             ) : catalogo.length === 0 ? (
               <View style={s.center}>
                 <Text style={s.placeholder}>Nenhum produto importado.</Text>
                 <Text style={s.hint}>
-                  Use a aba Configurações &gt; Importar Produtos para carregar o catálogo.
+                  Use a aba Configurações &gt; Importar Produtos para carregar
+                  o catálogo.
                 </Text>
               </View>
             ) : (
-              <ScrollView contentContainerStyle={s.listContent}>
-                {catalogo.map((produto, index) => {
-                  const key = produto.codbarras || produto.cod || String(index);
-                  return (
-                    <View key={key} style={s.produtoItem}>
-                      <Text style={s.produtoNome}>{produto.nome}</Text>
-                      <Text style={s.produtoCodigo}>
-                        Código: {produto.cod || "—"}
-                      </Text>
-                      <Text style={s.produtoCodigo}>Cod. barras: {produto.codbarras}</Text>
-                    </View>
-                  );
-                })}
-              </ScrollView>
+              <>
+                <View style={{ paddingHorizontal: 4, marginBottom: 8 }}>
+                  <Text style={s.hint}>
+                    Total de produtos: {catalogo.length} | mostrando{" "}
+                    {visibleCount} itens
+                  </Text>
+                </View>
+
+                <FlatList
+                  data={catalogo.slice(0, visibleCount)}
+                  keyExtractor={(item, index) =>
+                    item.codbarras || item.cod || String(index)
+                  }
+                  renderItem={renderProduto}
+                  contentContainerStyle={s.listContent}
+                  onEndReached={handleLoadMore}
+                  onEndReachedThreshold={0.4}
+                  initialNumToRender={30}
+                  maxToRenderPerBatch={30}
+                  windowSize={11}
+                  removeClippedSubviews
+                  ListFooterComponent={
+                    visibleCount < catalogo.length ? (
+                      <View
+                        style={{
+                          paddingVertical: 16,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <ActivityIndicator size="small" color="#111" />
+                        <Text style={s.hint}>
+                          Carregando mais produtos…
+                        </Text>
+                      </View>
+                    ) : null
+                  }
+                />
+              </>
             )}
           </View>
         )}
@@ -133,7 +198,10 @@ function TabButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[s.tabBtn, active && s.tabBtnActive]} onPress={onPress}>
+    <TouchableOpacity
+      style={[s.tabBtn, active && s.tabBtnActive]}
+      onPress={onPress}
+    >
       <Text style={[s.tabText, active && s.tabTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -142,8 +210,9 @@ function TabButton({
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: {
+    paddingTop: 16,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: "#ddd",
   },
@@ -168,7 +237,12 @@ const s = StyleSheet.create({
   tabTextActive: { color: "#fff" },
   content: { flex: 1, padding: 16 },
   flex: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 6 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
   placeholder: { fontSize: 16, fontWeight: "600" },
   hint: { fontSize: 12, color: "#666" },
   listContent: { paddingBottom: 24, gap: 12 },
