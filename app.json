@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "meuapp",
-    "slug": "meuapp",
-    "version": "1.0.0",
+    "name": "Contagem LobosTi",
+    "slug": "contagem-lobosti",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "meuapp",
+    "scheme": "contagemlobosti",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -19,7 +19,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.lobosti.meuapp",
+      "versionCode": 2
     },
     "web": {
       "output": "static",

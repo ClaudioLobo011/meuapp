@@ -3,11 +3,19 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 0,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1762789803507,
                     "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1764883346810,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,12 +1,12 @@\n {\n   \"expo\": {\n-    \"name\": \"meuapp\",\n-    \"slug\": \"meuapp\",\n+    \"name\": \"Contagem LobosTi\",\n+    \"slug\": \"contagem-lobosti\",\n     \"version\": \"1.0.0\",\n     \"orientation\": \"portrait\",\n     \"icon\": \"./assets/images/icon.png\",\n-    \"scheme\": \"meuapp\",\n+    \"scheme\": \"contagemlobosti\",\n     \"userInterfaceStyle\": \"automatic\",\n     \"newArchEnabled\": true,\n     \"ios\": {\n       \"supportsTablet\": true\n"
+                },
+                {
+                    "date": 1764883542861,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,56 @@\n+{\n+  \"expo\": {\n+    \"name\": \"Contagem LobosTi\",\n+    \"slug\": \"contagem-lobosti\",\n+    \"version\": \"1.0.1\",\n+    \"orientation\": \"portrait\",\n+    \"icon\": \"./assets/images/icon.png\",\n+    \"scheme\": \"contagemlobosti\",\n+    \"userInterfaceStyle\": \"automatic\",\n+    \"newArchEnabled\": true,\n+    \"ios\": {\n+      \"supportsTablet\": true\n+    },\n+    \"android\": {\n+      \"adaptiveIcon\": {\n+        \"backgroundColor\": \"#E6F4FE\",\n+        \"foregroundImage\": \"./assets/images/android-icon-foreground.png\",\n+        \"backgroundImage\": \"./assets/images/android-icon-background.png\",\n+        \"monochromeImage\": \"./assets/images/android-icon-monochrome.png\"\n+      },\n+      \"edgeToEdgeEnabled\": true,\n+      \"predictiveBackGestureEnabled\": false,\n+      \"package\": \"com.lobosti.meuapp\",\n+      \"versionCode\": 2\n+    },\n+    \"web\": {\n+      \"output\": \"static\",\n+      \"favicon\": \"./assets/images/favicon.png\"\n+    },\n+    \"plugins\": [\n+      \"expo-router\",\n+      [\n+        \"expo-splash-screen\",\n+        {\n+          \"image\": \"./assets/images/splash-icon.png\",\n+          \"imageWidth\": 200,\n+          \"resizeMode\": \"contain\",\n+          \"backgroundColor\": \"#ffffff\",\n+          \"dark\": {\n+            \"backgroundColor\": \"#000000\"\n+          }\n+        }\n+      ]\n+    ],\n+    \"experiments\": {\n+      \"typedRoutes\": true,\n+      \"reactCompiler\": true\n+    },\n+    \"extra\": {\n+      \"router\": {},\n+      \"eas\": {\n+        \"projectId\": \"869346df-8f43-458b-a792-78ee9d97d394\"\n+      }\n+    }\n+  }\n+}\n"
                 }
             ],
             "date": 1762789803507,
