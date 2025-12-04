@@ -177,7 +177,8 @@ Produtos lidos: ${parsed.length}`);
       const uri = `${FileSystem.cacheDirectory}${filename}`;
 
       await FileSystem.writeAsStringAsync(uri, conteudo, {
-        encoding: FileSystem.EncodingType.UTF8,
+        // "utf8" string evita falha quando EncodingType não está disponível no runtime
+        encoding: "utf8",
       });
 
       if (await Sharing.isAvailableAsync()) {
