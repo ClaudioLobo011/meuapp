@@ -1,0 +1,18 @@
+{
+    "sourceFile": "eas.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1764881825912,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1764881825912,
+            "name": "Commit-0",
+            "content": "{\n  \"cli\": {\n    \"version\": \">= 7.0.0\"\n  },\n  \"build\": {\n    \"preview\": {\n      \"distribution\": \"internal\",\n      \"android\": {\n        \"buildType\": \"apk\"\n      }\n    },\n    \"production\": {\n      \"android\": {\n        \"buildType\": \"app-bundle\"\n      }\n    }\n  }\n}"
+        }
+    ]
+}
